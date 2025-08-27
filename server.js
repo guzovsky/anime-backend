@@ -11,13 +11,13 @@ const app = express();
 
 // ----- Middleware -----
 app.use(cors({
-    origin: "http://localhost:5173", // frontend URL
+    origin: process.env.NODE_ENV === "production"
+        ? process.env.API_URL
+        : "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
 app.use(express.json());
-
-const SECRET = process.env.SECRET;
 
 // ----- Connect to MongoDB -----
 mongoose.connect(
