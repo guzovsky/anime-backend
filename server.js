@@ -9,6 +9,9 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 
+const SECRET = process.env.SECRET;
+
+
 // ----- Middleware -----
 app.use(cors({
     origin: process.env.NODE_ENV === "production"
