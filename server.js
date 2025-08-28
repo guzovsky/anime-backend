@@ -14,9 +14,11 @@ const SECRET = process.env.SECRET;
 
 // ----- Middleware -----
 app.use(cors({
-    origin: process.env.NODE_ENV === "production"
-        ? process.env.API_URL
-        : "http://localhost:5173",
+    origin: [
+        "http://localhost:5173",
+        "https://anime-app-94dd.vercel.app",
+        /\.vercel\.app$/
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
