@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 require("dotenv").config();
 const crypto = require('crypto');
+const zxcvbn = require("zxcvbn");
+
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -88,6 +90,12 @@ app.post("/users", async (req, res) => {
         // ✅ Basic validation
         if (!name || !email || !password) {
             return res.status(400).json({ error: "Name, email, and password are required" });
+        }
+
+        // ✅ Password strength
+        const passwordStrength = zxcvbn(password);
+        if (passwordStrength.score < 3) {
+            return res.status(400).json({ error: "Password is too weak. Use a stronger one." });
         }
 
         // ✅ Check for existing user by email

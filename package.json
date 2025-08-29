@@ -21,7 +21,8 @@
     "mongodb": "^6.18.0",
     "mongoose": "^8.18.0",
     "nodemailer": "^7.0.5",
-    "resend": "^6.0.1"
+    "resend": "^6.0.1",
+    "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
