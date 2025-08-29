@@ -108,7 +108,7 @@ app.post("/users", async (req, res) => {
         const user = new User({ name, email, password: hashedPassword, verificationToken });
         await user.save();
 
-        const verificationLink = `https://anime-app-94dd.vercel.app/verify-email?token=${verificationToken}`;
+        const verificationLink = `https://anime-backend-fl5o.onrender.com/verify-email?token=${verificationToken}`;
 
         try {
             await sgMail.send({
