@@ -5,7 +5,8 @@ const jwt = require("jsonwebtoken");
 const cors = require("cors");
 require("dotenv").config();
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const app = express();
 
@@ -53,17 +54,6 @@ const userSchema = new mongoose.Schema({
     }
 });
 const User = mongoose.model("User", userSchema);
-
-// ✅ Create the Nodemailer transporter for Mailtrap
-const transporter = nodemailer.createTransport({
-    host: process.env.MAILTRAP_HOST,
-    port: process.env.MAILTRAP_PORT,
-    secure: false,
-    auth: {
-        user: process.env.MAILTRAP_USER,
-        pass: process.env.MAILTRAP_PASS
-    }
-});
 
 // ----- Middleware to protect routes -----
 function authenticateToken(req, res, next) {
@@ -118,12 +108,14 @@ app.post("/users", async (req, res) => {
         const user = new User({ name, email, password: hashedPassword, verificationToken });
         await user.save();
 
-        const verificationLink = `http://localhost:3000/verify-email?token=${verificationToken}`;
+        const verificationLink = `https://anime-app-94dd.vercel.app/verify-email?token=${verificationToken}`;
+
         try {
-            await transporter.sendMail({
-                from: '"Anime App" <no-reply@animeapp.com>',
+            await sgMail.send({
                 to: email,
+                from: 'animeapp62@gmail.com',
                 subject: "Verify your email address",
+                text: `Please click the following link to verify your email: ${verificationLink}`,
                 html: `<p>Please click the following link to verify your email:</p>
                <a href="${verificationLink}">${verificationLink}</a>`
             });
@@ -132,8 +124,8 @@ app.post("/users", async (req, res) => {
             console.error("Failed to send verification email:", emailErr);
             return res.status(500).json({ error: "Failed to send verification email. Please try again later." });
         }
-
         res.status(201).json({ message: "User registered. Please check your email to verify your account." });
+
     } catch (err) {
         console.error("Error registering user:", err);
         res.status(500).json({ error: "Server error. Please try again later." });
