@@ -83,32 +83,41 @@ app.get("/users", async (req, res) => {
 });
 
 // Register user
+const Joi = require('joi');
+
+const registerSchema = Joi.object({
+    name: Joi.string().min(3).max(30).required(),
+    email: Joi.string().email().required(),
+    password: Joi.string()
+        .min(8)
+        .max(128)
+        .required()
+        .pattern(new RegExp('^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]+$'))
+});
+
 app.post("/users", async (req, res) => {
     try {
-        const { name, email, password } = req.body;
-
-        // ✅ Basic validation
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: "Name, email, and password are required" });
+        // Validate input using Joi
+        const { error, value } = registerSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
         }
 
-        // ✅ Password strength
+        const { name, email, password } = value;
+
+        // Password strength check
         const passwordStrength = zxcvbn(password);
         if (passwordStrength.score < 3) {
             return res.status(400).json({ error: "Password is too weak. Use a stronger one." });
         }
 
-        // ✅ Check for existing user by email
+        // Check for existing user by email
         const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(409).json({ error: "Email already in use" });
-        }
+        if (existingUser) return res.status(409).json({ error: "Email already in use" });
 
-        // ✅ Check for existing user by name
+        // Check for existing username
         const existingName = await User.findOne({ name });
-        if (existingName) {
-            return res.status(409).json({ error: "Username already in use" });
-        }
+        if (existingName) return res.status(409).json({ error: "Username already in use" });
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -118,20 +127,15 @@ app.post("/users", async (req, res) => {
 
         const verificationLink = `https://anime-backend-fl5o.onrender.com/verify-email?token=${verificationToken}`;
 
-        try {
-            await sgMail.send({
-                to: email,
-                from: 'animeapp62@gmail.com',
-                subject: "Verify your email address",
-                text: `Please click the following link to verify your email: ${verificationLink}`,
-                html: `<p>Please click the following link to verify your email:</p>
-               <a href="${verificationLink}">${verificationLink}</a>`
-            });
-        } catch (emailErr) {
-            await User.findByIdAndDelete(user._id);
-            console.error("Failed to send verification email:", emailErr);
-            return res.status(500).json({ error: "Failed to send verification email. Please try again later." });
-        }
+        await sgMail.send({
+            to: email,
+            from: 'animeapp62@gmail.com',
+            subject: "Verify your email address",
+            text: `Please click the following link to verify your email: ${verificationLink}`,
+            html: `<p>Please click the following link to verify your email:</p>
+                   <a href="${verificationLink}">${verificationLink}</a>`
+        });
+
         res.status(201).json({ message: "User registered. Please check your email to verify your account." });
 
     } catch (err) {
@@ -139,6 +143,7 @@ app.post("/users", async (req, res) => {
         res.status(500).json({ error: "Server error. Please try again later." });
     }
 });
+
 
 // Login user
 app.post("/users/login", async (req, res) => {
